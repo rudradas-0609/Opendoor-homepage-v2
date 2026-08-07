@@ -1,0 +1,261 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Graphik";
+  src: url("/fonts/Graphik-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Graphik";
+  src: url("/fonts/Graphik-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --background: #fbf9f9;
+  --foreground: #25201d;
+  --od-blue: #0042e6;
+  --od-brown: 88, 64, 50;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "Graphik", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Graphik", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Split-flap / flip-panel digit */
+.flip-digit {
+  perspective: 480px;
+  transform-style: preserve-3d;
+}
+
+.flip-digit__panel {
+  position: absolute;
+  left: 0;
+  width: 46px;
+  height: 28px;
+  overflow: hidden;
+  pointer-events: none;
+  /* Own box-shadow is not clipped by overflow:hidden (unlike shadows on children) */
+  box-shadow:
+    0px 0px 0px 1px rgba(88, 64, 50, 0.2),
+    0px 16px 20.4px -9px rgba(88, 64, 50, 0.1);
+}
+
+.flip-digit__panel--top {
+  top: 0;
+  height: 28px;
+  border-radius: 9px 9px 3px 3px;
+  z-index: 1;
+}
+
+.flip-digit__panel--bottom {
+  top: 30px;
+  height: 27px;
+  border-radius: 3px 3px 9px 9px;
+  z-index: 1;
+}
+
+.flip-digit__panel--bottom .flip-digit__face,
+.flip-digit__flap--bottom .flip-digit__face {
+  top: -30px;
+}
+
+.flip-digit__flap {
+  position: absolute;
+  left: 0;
+  width: 46px;
+  overflow: hidden;
+  pointer-events: none;
+  backface-visibility: hidden;
+  z-index: 10;
+}
+
+.flip-digit__flap--top {
+  top: 0;
+  height: 28px;
+  border-radius: 9px 9px 3px 3px;
+  transform-origin: bottom center;
+  animation: flip-digit-top var(--flip-half, 225ms) ease-in forwards;
+  box-shadow:
+    0px 0px 0px 1px rgba(88, 64, 50, 0.2),
+    0 6px 10px -4px rgba(88, 64, 50, 0.25);
+}
+
+.flip-digit__flap--bottom {
+  top: 30px;
+  height: 27px;
+  border-radius: 3px 3px 9px 9px;
+  transform-origin: top center;
+  transform: rotateX(90deg);
+  animation: flip-digit-bottom var(--flip-half, 225ms) ease-out forwards;
+  animation-delay: var(--flip-half, 225ms);
+  box-shadow:
+    0px 0px 0px 1px rgba(88, 64, 50, 0.2),
+    0 -4px 10px -4px rgba(88, 64, 50, 0.2);
+}
+
+@keyframes flip-digit-top {
+  0% {
+    transform: rotateX(0deg);
+  }
+  100% {
+    transform: rotateX(-90deg);
+  }
+}
+
+@keyframes flip-digit-bottom {
+  0% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+
+/* Navbar chevron — morph tip up; shift icon down to keep optical center */
+.nav-chevron svg {
+  display: block;
+  transform: translateY(0);
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-chevron--open svg {
+  /* Tip moves 8px up (y 10 → 2); shift icon 4px down so bbox center stays at y=8 */
+  transform: translateY(4px);
+}
+
+.nav-chevron__path {
+  d: path("M4 6L8 10L12 6");
+  transition: d 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-chevron--open .nav-chevron__path {
+  d: path("M4 6L8 2L12 6");
+}
+
+/* Navbar Sell/Buy mega-menu
+   backdrop-filter must live on the same element as the shell transform —
+   an ancestor filter/transform creates a backdrop root and kills the glass effect. */
+.nav-menu-shell {
+  opacity: 0;
+  transform: translate3d(calc(-50% + var(--nav-menu-x, 0px)), -10px, 0);
+  pointer-events: none;
+  transition: none;
+  background: rgba(255, 255, 255, 0.8);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border-radius: 22px;
+  box-shadow:
+    0px 22px 40px -12px rgba(0, 0, 0, 0.28),
+    0px 0px 0px 1px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.nav-menu-shell--ready {
+  transition:
+    opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-menu-shell--open {
+  opacity: 1;
+  transform: translate3d(calc(-50% + var(--nav-menu-x, 0px)), 0, 0);
+  pointer-events: auto;
+}
+
+.nav-menu-content {
+  filter: blur(7px);
+  transition: none;
+}
+
+.nav-menu-shell--ready .nav-menu-content {
+  transition: filter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-menu-shell--open .nav-menu-content {
+  filter: blur(0);
+}
+
+.nav-menu-track {
+  display: flex;
+  width: 200%;
+  transform: translate3d(var(--nav-menu-track-x, 0%), 0, 0);
+  transition: none;
+  will-change: transform;
+}
+
+.nav-menu-track--ready {
+  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-menu-panel {
+  width: 50%;
+  opacity: 1;
+  filter: blur(0);
+  transition: none;
+}
+
+.nav-menu-track--ready .nav-menu-panel {
+  transition:
+    opacity 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-menu-panel--inactive {
+  opacity: 0.35;
+  filter: blur(7px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-digit__flap--top,
+  .flip-digit__flap--bottom {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
+
+  .nav-chevron svg,
+  .nav-chevron__path {
+    transition: none !important;
+  }
+
+  .nav-menu-shell,
+  .nav-menu-shell--ready,
+  .nav-menu-content,
+  .nav-menu-shell--ready .nav-menu-content,
+  .nav-menu-track,
+  .nav-menu-track--ready,
+  .nav-menu-panel,
+  .nav-menu-track--ready .nav-menu-panel {
+    transition: none !important;
+  }
+
+  .nav-menu-shell {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  .nav-menu-shell--open {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  .nav-menu-content {
+    filter: none;
+  }
+
+  .nav-menu-panel--inactive {
+    opacity: 1;
+    filter: none;
+  }
+}
