@@ -125,6 +125,57 @@ body {
   }
 }
 
+/* ==========================================================================
+   Cash-now section variants — panel swap + staggered item entrances
+   (currently disabled; part of the commented-out variant switcher work —
+   see the bottom of components/CashNowMoreLater.tsx)
+
+@keyframes variant-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.variant-panel-enter {
+  animation: variant-panel-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes variant-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.variant-rise {
+  animation: variant-rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+   Duration bars — animates from 0 to the element's own width (--bar-w)
+@keyframes variant-bar-grow {
+  from {
+    width: 0;
+  }
+}
+
+.variant-bar {
+  width: var(--bar-w);
+  animation: variant-bar-grow 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+   Also inside the reduced-motion media query at the bottom of this file:
+   .variant-panel-enter, .variant-rise, .variant-bar { animation: none; }
+   ========================================================================== */
+
 /* Navbar chevron — morph tip up; shift icon down to keep optical center */
 .nav-chevron svg {
   display: block;
