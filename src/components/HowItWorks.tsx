@@ -1,30 +1,25 @@
 "use client";
 
-import Image from "next/image";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
 } from "react";
+import {
+  SceneAccept,
+  SceneAssessment,
+  SceneOffer,
+  SceneTellUs,
+} from "./how-it-works/Scenes";
 
 const IMAGE_SHADOW =
   "shadow-[0px_19px_22.2px_-14px_rgba(74,40,20,0.15),0px_0px_0px_1px_rgba(100,57,31,0.32)]";
-
-const GLASS_SHADOW =
-  "shadow-[0px_0px_0px_1px_rgba(88,64,50,0.16),0px_16px_20.4px_-9px_rgba(88,64,50,0.19),0px_37px_37.3px_3px_rgba(88,64,50,0.12)]";
 
 const GLASS_INSET =
   "pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_0px_0px_1px_white,inset_0px_-3px_0px_0px_rgba(88,64,50,0.1)]";
 
 const STEP_DURATION_MS = 5600;
-const ADDRESS = "3245 Jarvis St, Gotham, Ohio 129387";
-const ADDRESS_PLACEHOLDER = "Enter your home address";
-const HOMES_SOLD = "374";
-const AVG_PRICE = "$634,684.56";
-const TYPE_MS = 36;
-const STATS_HEIGHT = 131;
 
 type Step = {
   id: string;
@@ -80,158 +75,6 @@ function GlassIcon({ src }: { src: string }) {
         className="absolute left-1/2 top-1/2 size-6 -translate-x-1/2 -translate-y-1/2"
       />
       <span aria-hidden className={GLASS_INSET} />
-    </div>
-  );
-}
-
-function SceneOverlay({ replayKey }: { replayKey: number }) {
-  const [typed, setTyped] = useState("");
-  const [showPlaceholder, setShowPlaceholder] = useState(true);
-  const [statsIn, setStatsIn] = useState(false);
-  const timersRef = useRef<number[]>([]);
-
-  const clearTimers = useCallback(() => {
-    for (const id of timersRef.current) window.clearTimeout(id);
-    timersRef.current = [];
-  }, []);
-
-  const later = useCallback(
-    (ms: number, fn: () => void) => {
-      const id = window.setTimeout(fn, ms);
-      timersRef.current.push(id);
-      return id;
-    },
-    [],
-  );
-
-  useEffect(() => {
-    clearTimers();
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // Defer all state writes out of the effect body (lint + avoid cascading renders)
-    later(0, () => {
-      if (reduced) {
-        setShowPlaceholder(false);
-        setTyped(ADDRESS);
-        setStatsIn(true);
-        return;
-      }
-
-      setTyped("");
-      setShowPlaceholder(true);
-      setStatsIn(false);
-
-      // Brief beat with placeholder, then type the address
-      later(700, () => {
-        setShowPlaceholder(false);
-
-        let i = 0;
-        const typeNext = () => {
-          i += 1;
-          setTyped(ADDRESS.slice(0, i));
-          if (i < ADDRESS.length) {
-            later(TYPE_MS, typeNext);
-          } else {
-            // Short pause, then bring in the stats card
-            later(280, () => setStatsIn(true));
-          }
-        };
-        later(180, typeNext);
-      });
-    });
-
-    return clearTimers;
-  }, [replayKey, clearTimers, later]);
-
-  const bottomRadius = statsIn ? 10 : 20;
-
-  return (
-    <div className="absolute inset-x-6 bottom-[10%] mx-auto flex w-auto max-w-[461px] flex-col gap-2">
-      {/* Address bar */}
-      <div
-        className={`relative flex h-16 items-center gap-2 overflow-hidden px-4 py-2 pr-2 ${GLASS_SHADOW}`}
-        style={{
-          borderRadius: `20px 20px ${bottomRadius}px ${bottomRadius}px`,
-          transition: "border-radius 520ms cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-      >
-        <span
-          aria-hidden
-          className="absolute inset-0 rounded-[inherit] bg-white/85 backdrop-blur-[11.4px]"
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/icons/map-pin-step.svg"
-          alt=""
-          width={24}
-          height={24}
-          className="relative size-6 shrink-0"
-        />
-        <p
-          className={`relative flex min-w-0 flex-1 items-center truncate text-[16px] font-normal tracking-[-0.8px] ${
-            showPlaceholder
-              ? "text-[rgba(37,32,29,0.6)]"
-              : "text-[#25201d]"
-          }`}
-        >
-          <span className="truncate">
-            {showPlaceholder ? ADDRESS_PLACEHOLDER : typed}
-          </span>
-          {!showPlaceholder && typed.length < ADDRESS.length ? (
-            <span
-              aria-hidden
-              className="ml-px h-[14px] w-[1.5px] shrink-0 self-center bg-[#25201d]"
-            />
-          ) : null}
-        </p>
-        <span aria-hidden className={GLASS_INSET} />
-      </div>
-
-      {/* Reserved slot keeps the address bar in place while stats enter */}
-      <div className="relative" style={{ height: STATS_HEIGHT }}>
-        <div
-          className={`absolute inset-0 overflow-hidden rounded-tl-[10px] rounded-tr-[10px] rounded-bl-[20px] rounded-br-[20px] px-[25px] py-[26px] ${GLASS_SHADOW}`}
-          style={
-            {
-              opacity: statsIn ? 1 : 0,
-              translate: statsIn ? "0 0" : "0 -28px",
-              filter: statsIn ? "blur(0px)" : "blur(10px)",
-              transition:
-                "opacity 520ms cubic-bezier(0.22, 1, 0.36, 1), translate 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 520ms cubic-bezier(0.22, 1, 0.36, 1)",
-              pointerEvents: statsIn ? "auto" : "none",
-            } as CSSProperties
-          }
-        >
-          <span
-            aria-hidden
-            className="absolute inset-0 rounded-[inherit] bg-white/85 backdrop-blur-[11.4px]"
-          />
-          <div className="relative grid grid-cols-2 items-stretch">
-            <div className="flex flex-col gap-3 pr-5">
-              <p className="text-[14px] font-normal leading-[18px] tracking-[-0.7px] text-[rgba(37,32,29,0.6)]">
-                Homes sold to Opendoor in Gotham
-              </p>
-              <p className="text-[28px] font-medium tracking-[-1.4px] text-[#25201d]">
-                {HOMES_SOLD}
-              </p>
-            </div>
-
-            <div className="relative flex flex-col gap-3 pl-5">
-              <div
-                aria-hidden
-                className="absolute top-0 bottom-0 left-0 w-px bg-[rgba(88,64,50,0.16)]"
-              />
-              <p className="text-[14px] font-normal leading-[18px] tracking-[-0.7px] text-[rgba(37,32,29,0.6)]">
-                Avg. price of home sold last month
-              </p>
-              <p className="text-[28px] font-medium tracking-[-1.4px] text-[#25201d]">
-                {AVG_PRICE}
-              </p>
-            </div>
-          </div>
-          <span aria-hidden className={GLASS_INSET} />
-        </div>
-      </div>
     </div>
   );
 }
@@ -311,17 +154,10 @@ export function HowItWorks() {
         <div
           className={`relative mx-auto aspect-[571/620] w-full max-w-[571px] shrink-0 overflow-hidden rounded-[40px] bg-[#ede8e8] lg:mx-0 ${IMAGE_SHADOW}`}
         >
-          <div className="absolute left-0 top-1/2 h-[108%] w-[155%] -translate-y-1/2">
-            <Image
-              src="/images/how-it-works/neighborhood.png"
-              alt=""
-              fill
-              sizes="571px"
-              className="pointer-events-none object-cover"
-            />
-          </div>
-
-          <SceneOverlay replayKey={0} />
+          <SceneTellUs active={active === 0} />
+          <SceneAssessment active={active === 1} />
+          <SceneOffer active={active === 2} />
+          <SceneAccept active={active === 3} />
         </div>
 
         {/* Right steps */}

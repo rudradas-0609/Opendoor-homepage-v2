@@ -465,7 +465,7 @@ export function Testimonials() {
   };
 
   return (
-    <section className="relative w-full overflow-x-clip bg-[#fbf9f9] pt-[74px] pb-[74px]">
+    <section className="relative w-full overflow-x-clip bg-[#fbf9f9] pt-8 pb-[74px] lg:pt-8">
       <div className="relative mx-auto flex w-full max-w-[1440px] items-end justify-between gap-6 px-5 sm:px-10 lg:px-[120px]">
         <h2
           ref={headingRef}

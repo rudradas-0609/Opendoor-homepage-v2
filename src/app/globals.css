@@ -16,6 +16,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Nanum Pen Script";
+  src: url("/fonts/NanumPenScript.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #fbf9f9;
   --foreground: #25201d;
@@ -27,6 +35,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: "Graphik", ui-sans-serif, system-ui, sans-serif;
+  --font-hand: "Nanum Pen Script", cursive;
 }
 
 body {
@@ -125,57 +134,6 @@ body {
   }
 }
 
-/* ==========================================================================
-   Cash-now section variants — panel swap + staggered item entrances
-   (currently disabled; part of the commented-out variant switcher work —
-   see the bottom of components/CashNowMoreLater.tsx)
-
-@keyframes variant-panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.variant-panel-enter {
-  animation: variant-panel-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes variant-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.variant-rise {
-  animation: variant-rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-   Duration bars — animates from 0 to the element's own width (--bar-w)
-@keyframes variant-bar-grow {
-  from {
-    width: 0;
-  }
-}
-
-.variant-bar {
-  width: var(--bar-w);
-  animation: variant-bar-grow 1100ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-   Also inside the reduced-motion media query at the bottom of this file:
-   .variant-panel-enter, .variant-rise, .variant-bar { animation: none; }
-   ========================================================================== */
-
 /* Navbar chevron — morph tip up; shift icon down to keep optical center */
 .nav-chevron svg {
   display: block;
@@ -270,6 +228,167 @@ body {
   filter: blur(7px);
 }
 
+/* Moments headline — handwritten check draw + label fade */
+.moments-check {
+  display: block;
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  color: inherit;
+}
+
+.moments-check__stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.moments-check--drawn .moments-check__stroke {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.moments-task-fade {
+  opacity: 1;
+  transition: opacity 350ms ease;
+}
+
+.moments-task-fade--out {
+  opacity: 0;
+}
+
+/* Moments photo — blurred ellipse grows from the bottom to reveal the next scene.
+   --mt is animated on the parent so the photo and caption stay in lockstep.
+   The gradient box stays 100% of the layer; only the ellipse radii grow, so the
+   mask never shows a rectangular hard edge. End radii overshoot so the solid
+   stop covers the whole layer before the animation finishes. */
+@property --mt {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.moments-transitioning {
+  --mt: 0;
+  --moments-ew: calc(22% + var(--mt) * 258%);
+  --moments-eh: calc(16% + var(--mt) * 344%);
+  animation: moments-ellipse-t 3.2s cubic-bezier(0.22, 0, 0.2, 1) forwards;
+}
+
+@keyframes moments-ellipse-t {
+  from {
+    --mt: 0;
+  }
+  to {
+    --mt: 1;
+  }
+}
+
+.moments-reveal,
+.moments-conceal {
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+}
+
+.moments-reveal {
+  -webkit-mask-image: radial-gradient(
+    ellipse var(--moments-ew) var(--moments-eh) at 50% 100%,
+    #000 0%,
+    #000 42%,
+    transparent 70%
+  );
+  mask-image: radial-gradient(
+    ellipse var(--moments-ew) var(--moments-eh) at 50% 100%,
+    #000 0%,
+    #000 42%,
+    transparent 70%
+  );
+}
+
+.moments-conceal {
+  -webkit-mask-image: radial-gradient(
+    ellipse var(--moments-ew) var(--moments-eh) at 50% 100%,
+    transparent 0%,
+    transparent 42%,
+    #000 70%
+  );
+  mask-image: radial-gradient(
+    ellipse var(--moments-ew) var(--moments-eh) at 50% 100%,
+    transparent 0%,
+    transparent 42%,
+    #000 70%
+  );
+}
+
+/* Cash Now timeline — small hover confetti on first / second payment */
+.payment-confetti {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  z-index: 30;
+}
+
+.payment-seg:hover,
+.payment-seg:focus-visible {
+  z-index: 20;
+}
+
+.payment-confetti__piece {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 0.5px rgba(37, 32, 29, 0.12);
+}
+
+.payment-seg:hover .payment-confetti__piece,
+.payment-seg:focus-visible .payment-confetti__piece {
+  animation: payment-confetti-burst 820ms linear both;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes payment-confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.35) rotate(0deg);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(
+        calc(-50% + var(--dx) * 0.58px),
+        calc(-50% + var(--dy) * 0.58px)
+      )
+      scale(1) rotate(calc(var(--rot) * 0.5deg));
+  }
+  55% {
+    opacity: 1;
+    transform: translate(
+        calc(-50% + var(--dx) * 0.88px),
+        calc(-50% + var(--dy) * 0.88px)
+      )
+      scale(0.92) rotate(calc(var(--rot) * 0.85deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--dx) * 1px),
+        calc(-50% + var(--dy) * 1px)
+      )
+      scale(0.82) rotate(calc(var(--rot) * 1deg));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .flip-digit__flap--top,
   .flip-digit__flap--bottom {
@@ -308,5 +427,31 @@ body {
   .nav-menu-panel--inactive {
     opacity: 1;
     filter: none;
+  }
+
+  .moments-check__stroke,
+  .moments-check--drawn .moments-check__stroke {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  .moments-task-fade,
+  .moments-task-fade--out {
+    transition: none;
+  }
+
+  .moments-transitioning {
+    animation: none;
+  }
+
+  .moments-reveal,
+  .moments-conceal {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .payment-seg:hover .payment-confetti__piece,
+  .payment-seg:focus-visible .payment-confetti__piece {
+    animation: none;
   }
 }

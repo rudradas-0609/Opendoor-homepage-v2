@@ -1,17 +1,28 @@
+import { AgentsSection } from "@/components/AgentsSection";
+import { BuyHomes } from "@/components/BuyHomes";
 import { CashNowMoreLater } from "@/components/CashNowMoreLater";
-import { Hero } from "@/components/Hero";
+import { FAQ } from "@/components/FAQ";
+import { FinalCTASwitcher } from "@/components/FinalCTASwitcher";
+import { HeroSwitcher } from "@/components/HeroSwitcher";
 import { HowItWorks } from "@/components/HowItWorks";
-import { PromiseSection } from "@/components/PromiseSection";
+import { MomentsSection } from "@/components/MomentsSection";
 import { Testimonials } from "@/components/Testimonials";
 
 export default function Home() {
   return (
-    <main>
-      <Hero />
-      <Testimonials />
-      <HowItWorks />
-      <CashNowMoreLater />
-      <PromiseSection />
-    </main>
+    <>
+      <main>
+        <HeroSwitcher />
+        <Testimonials />
+        <HowItWorks />
+        <CashNowMoreLater />
+        <MomentsSection>
+          <BuyHomes />
+          <AgentsSection />
+          <FAQ />
+          <FinalCTASwitcher />
+        </MomentsSection>
+      </main>
+    </>
   );
 }

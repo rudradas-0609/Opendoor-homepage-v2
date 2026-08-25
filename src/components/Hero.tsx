@@ -3,7 +3,14 @@ import { Navbar } from "./Navbar";
 
 export function Hero() {
   return (
-    <section className="relative w-full overflow-x-clip bg-[#fbf9f9]">
+    <>
+      <div className="pointer-events-none sticky top-0 z-50">
+        <div className="pointer-events-auto relative mx-auto w-full max-w-[1440px] px-5 pt-2.5 sm:px-10 lg:px-[120px]">
+          <Navbar />
+        </div>
+      </div>
+
+      <section className="relative -mt-[82px] w-full overflow-x-clip bg-[#fbf9f9]">
       {/* Upper region — bg crops at the bottom edge (= top of input) */}
       <div className="relative pb-8">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -65,10 +72,8 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Content above the input */}
-        <div className="relative mx-auto w-full max-w-[1440px] px-5 pt-2.5 sm:px-10 lg:px-[120px]">
-          <Navbar />
-
+        {/* Content above the input — 82px matches sticky nav (72px bar + 10px pad) */}
+        <div className="relative mx-auto w-full max-w-[1440px] px-5 pt-[82px] sm:px-10 lg:px-[120px]">
           <div className="mx-auto mt-[364px] flex w-full max-w-[806px] flex-col items-center gap-6 text-center">
             <h1 className="w-full text-[48px] font-medium leading-[1.05] tracking-[-0.05em] text-[#25201d] sm:text-[56px] sm:leading-[60px] lg:text-[72px] lg:leading-[74px] lg:tracking-[-3.6px]">
               Move on your schedule.
@@ -144,5 +149,6 @@ export function Hero() {
         </p>
       </div>
     </section>
+    </>
   );
 }

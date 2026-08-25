@@ -88,7 +88,8 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-export function Navbar() {
+export function Navbar({ variant = "glass" }: { variant?: "glass" | "solid" }) {
+  const isSolid = variant === "solid";
   const sellMenuId = useId();
   const buyMenuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -228,7 +229,11 @@ export function Navbar() {
     // Outer wrapper has no backdrop-filter so the menu can blur the page behind it.
     <div ref={rootRef} className="relative w-full">
       <nav
-        className="relative z-10 flex h-[72px] w-full items-center justify-between rounded-[26px] bg-white/80 pl-[30px] pr-[14px] shadow-[0px_22px_19.4px_-11px_rgba(0,0,0,0.32),0px_0px_0px_1px_rgba(0,0,0,0.2)] backdrop-blur-[11.45px]"
+        className={
+          isSolid
+            ? "relative z-10 flex h-[72px] w-full items-center justify-between"
+            : "relative z-10 flex h-[72px] w-full items-center justify-between rounded-[26px] bg-white/80 pl-[30px] pr-[14px] shadow-[0px_22px_19.4px_-11px_rgba(0,0,0,0.32),0px_0px_0px_1px_rgba(0,0,0,0.2)] backdrop-blur-[11.45px]"
+        }
         aria-label="Primary"
       >
         <a
@@ -293,28 +298,54 @@ export function Navbar() {
             Agents
           </a>
 
-          {/* Sign in — outer ring + inset highlight / bottom shade from Figma */}
-          <a
-            href="#"
-            onMouseEnter={scheduleClose}
-            className={`group relative ml-3 flex h-11 items-center justify-center overflow-hidden rounded-xl px-6 shadow-[0px_0px_0px_1px_rgba(88,64,50,0.16)] transition-shadow hover:shadow-[0px_0px_0px_1px_rgba(88,64,50,0.3)] active:shadow-[0px_0px_0px_1px_rgba(88,64,50,0.3)] ${focusRing}`}
-          >
-            <span
-              aria-hidden
-              className="absolute inset-0 rounded-xl bg-white/90"
-            />
-            <span
-              aria-hidden
-              className="absolute inset-0 rounded-xl bg-[rgba(88,64,50,0.1)] opacity-0 transition-opacity group-active:opacity-100"
-            />
-            <span className="relative text-[16px] font-medium tracking-[-0.8px] text-[#25201d]">
-              Sign in
-            </span>
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_0px_0px_1px_white,inset_0px_-4px_0px_0px_rgba(88,64,50,0.1)] transition-shadow group-hover:shadow-[inset_0px_0px_0px_1px_white,inset_0px_-4px_0px_0px_rgba(88,64,50,0.05)] group-active:shadow-[inset_0px_0px_0px_1px_white]"
-            />
-          </a>
+          <div className={`flex items-center gap-3 ${isSolid ? "" : "ml-3"}`}>
+            {/* Sign in — outer ring + inset highlight / bottom shade from Figma */}
+            <a
+              href="#"
+              onMouseEnter={scheduleClose}
+              className={`group relative flex h-11 items-center justify-center overflow-hidden rounded-xl px-6 shadow-[0px_0px_0px_1px_rgba(88,64,50,0.16)] transition-shadow hover:shadow-[0px_0px_0px_1px_rgba(88,64,50,0.3)] active:shadow-[0px_0px_0px_1px_rgba(88,64,50,0.3)] ${focusRing}`}
+            >
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-xl bg-white/90"
+              />
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-xl bg-[rgba(88,64,50,0.1)] opacity-0 transition-opacity group-active:opacity-100"
+              />
+              <span className="relative text-[16px] font-medium tracking-[-0.8px] text-[#25201d]">
+                Sign in
+              </span>
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_0px_0px_1px_white,inset_0px_-4px_0px_0px_rgba(88,64,50,0.1)] transition-shadow group-hover:shadow-[inset_0px_0px_0px_1px_white,inset_0px_-4px_0px_0px_rgba(88,64,50,0.05)] group-active:shadow-[inset_0px_0px_0px_1px_white]"
+              />
+            </a>
+
+            {isSolid ? (
+              <a
+                href="#"
+                onMouseEnter={scheduleClose}
+                className={`group relative hidden h-11 items-center justify-center overflow-hidden rounded-xl px-6 shadow-[0px_0px_0px_1px_#0042e6] transition-shadow hover:shadow-[0px_0px_0px_1px_#002b96] active:shadow-[0px_0px_0px_1px_#0042e6] md:flex ${focusRing}`}
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-xl bg-[#0042e6] transition-colors group-active:bg-[#002ede]"
+                />
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-xl bg-white/12 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-0"
+                />
+                <span className="relative whitespace-nowrap text-[16px] font-medium tracking-[-0.8px] text-white">
+                  Get an offer
+                </span>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_0px_0px_1px_rgba(255,255,255,0.25),inset_0px_-4px_0px_0px_rgba(0,0,0,0.5)] transition-shadow group-hover:shadow-[inset_0px_0px_0px_1px_rgba(255,255,255,0.25),inset_0px_-4px_0px_0px_rgba(0,0,0,0.14)] group-active:shadow-[inset_0px_0px_0px_1px_rgba(255,255,255,0.25)]"
+                />
+              </a>
+            ) : null}
+          </div>
         </div>
       </nav>
 
