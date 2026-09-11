@@ -6,7 +6,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 
@@ -16,12 +15,27 @@ const GLASS_SHADOW =
 const GLASS_INSET =
   "pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_0px_0px_1px_white,inset_0px_-3px_0px_0px_rgba(88,64,50,0.1)]";
 
-const ADDRESS = "3245 Jarvis St, Gotham, Ohio 129387";
+const ADDRESS = "1234 Main St, Marietta, GA 30062";
 const ADDRESS_PLACEHOLDER = "Enter your home address";
-const HOMES_SOLD = "374";
-const AVG_PRICE = "$634,684.56";
 const TYPE_MS = 36;
-const STATS_HEIGHT = 131;
+
+const CHECKLIST_ITEMS = [
+  "Retrieving info on the address",
+  "Looking at similar houses in the neighbourhood",
+  "Checking housing market data for comparisons",
+  "Preparing a preliminary offer",
+] as const;
+
+type ChecklistStatus =
+  | "hidden"
+  | "loading"
+  | "boxed"
+  | "connected"
+  | "done";
+
+const INITIAL_CHECKLIST: ChecklistStatus[] = CHECKLIST_ITEMS.map(
+  () => "hidden",
+);
 
 function SceneFrame({
   active,
@@ -32,19 +46,48 @@ function SceneFrame({
 }) {
   return (
     <div
-      className={`absolute inset-0 overflow-hidden ${active ? "z-10" : "pointer-events-none"}`}
+      className={`absolute inset-0 overflow-hidden transition-[opacity,filter,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,filter,transform] ${
+        active
+          ? "z-10 scale-100 opacity-100 blur-0"
+          : "pointer-events-none scale-[1.015] opacity-0 blur-[12px]"
+      }`}
       aria-hidden={!active}
-      style={{ opacity: active ? 1 : 0 }}
     >
       {children}
     </div>
   );
 }
 
-function SceneOverlay({ replayKey }: { replayKey: number }) {
+function StatusIndicator({ status }: { status: ChecklistStatus }) {
+  const isVisible = status !== "hidden";
+  const isLoading = status === "loading";
+
+  return (
+    <span className="relative size-[13px] shrink-0">
+      <span
+        aria-hidden
+        className={`absolute inset-0 border-solid transition-[border-radius,border-color,border-width,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+          isLoading
+            ? "animate-spin rounded-full border-[1.5px] border-[rgba(0,65,231,0.25)] border-t-[#0041e7]"
+            : "rounded-[3px] border border-[#0041e7]"
+        } ${isVisible ? "opacity-100" : "opacity-0"}`}
+      >
+        <span
+          className={`absolute left-0.5 top-0.5 size-[7px] rounded-[1px] bg-[#0041e7] transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            status === "done" ? "scale-100 opacity-100" : "scale-50 opacity-0"
+          }`}
+        />
+      </span>
+    </span>
+  );
+}
+
+function SceneOverlay({ active }: { active: boolean }) {
   const [typed, setTyped] = useState("");
   const [showPlaceholder, setShowPlaceholder] = useState(true);
-  const [statsIn, setStatsIn] = useState(false);
+  const [cardVisible, setCardVisible] = useState(false);
+  const [rowStatuses, setRowStatuses] =
+    useState<ChecklistStatus[]>(INITIAL_CHECKLIST);
   const timersRef = useRef<number[]>([]);
 
   const clearTimers = useCallback(() => {
@@ -60,19 +103,62 @@ function SceneOverlay({ replayKey }: { replayKey: number }) {
 
   useEffect(() => {
     clearTimers();
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     later(0, () => {
+      setTyped("");
+      setShowPlaceholder(true);
+      setCardVisible(false);
+      setRowStatuses(INITIAL_CHECKLIST);
+
+      if (!active) return;
+
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
+
       if (reduced) {
         setShowPlaceholder(false);
         setTyped(ADDRESS);
-        setStatsIn(true);
+        setCardVisible(true);
+        setRowStatuses(["done", "done", "done", "done"]);
         return;
       }
 
-      setTyped("");
-      setShowPlaceholder(true);
-      setStatsIn(false);
+      const setRowStatus = (index: number, status: ChecklistStatus) => {
+        setRowStatuses((current) =>
+          current.map((value, rowIndex) =>
+            rowIndex === index ? status : value,
+          ),
+        );
+      };
+
+      const runChecklistRow = (index: number) => {
+        setRowStatus(index, "loading");
+
+        later(700, () => {
+          setRowStatus(index, "boxed");
+
+          if (index === 0) {
+            later(220, () => {
+              setRowStatus(index, "done");
+              later(360, () => runChecklistRow(index + 1));
+            });
+            return;
+          }
+
+          later(180, () => {
+            setRowStatus(index, "connected");
+
+            later(420, () => {
+              setRowStatus(index, "done");
+
+              if (index < CHECKLIST_ITEMS.length - 1) {
+                later(360, () => runChecklistRow(index + 1));
+              }
+            });
+          });
+        });
+      };
 
       later(700, () => {
         setShowPlaceholder(false);
@@ -84,7 +170,10 @@ function SceneOverlay({ replayKey }: { replayKey: number }) {
           if (i < ADDRESS.length) {
             later(TYPE_MS, typeNext);
           } else {
-            later(280, () => setStatsIn(true));
+            later(280, () => {
+              setCardVisible(true);
+              runChecklistRow(0);
+            });
           }
         };
         later(180, typeNext);
@@ -92,18 +181,18 @@ function SceneOverlay({ replayKey }: { replayKey: number }) {
     });
 
     return clearTimers;
-  }, [replayKey, clearTimers, later]);
+  }, [active, clearTimers, later]);
 
-  const bottomRadius = statsIn ? 10 : 20;
+  const visibleRows = rowStatuses.filter(
+    (status) => status !== "hidden",
+  ).length;
+  const checklistHeight =
+    visibleRows > 0 ? 40 + visibleRows * 15 + (visibleRows - 1) * 17 : 0;
 
   return (
-    <div className="absolute inset-x-6 bottom-[10%] mx-auto flex w-auto max-w-[461px] flex-col gap-2">
+    <div className="absolute inset-x-6 top-[53%] mx-auto w-auto max-w-[461px]">
       <div
-        className={`relative flex h-16 items-center gap-2 overflow-hidden px-4 py-2 pr-2 ${GLASS_SHADOW}`}
-        style={{
-          borderRadius: `20px 20px ${bottomRadius}px ${bottomRadius}px`,
-          transition: "border-radius 520ms cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
+        className={`relative flex h-16 items-center gap-2 overflow-hidden rounded-[20px] px-4 py-2 pr-2 ${GLASS_SHADOW}`}
       >
         <span
           aria-hidden
@@ -135,47 +224,65 @@ function SceneOverlay({ replayKey }: { replayKey: number }) {
         <span aria-hidden className={GLASS_INSET} />
       </div>
 
-      <div className="relative" style={{ height: STATS_HEIGHT }}>
+      <div
+        className="relative mt-2 overflow-visible transition-[height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ height: checklistHeight }}
+      >
         <div
-          className={`absolute inset-0 overflow-hidden rounded-tl-[10px] rounded-tr-[10px] rounded-bl-[20px] rounded-br-[20px] px-[25px] py-[26px] ${GLASS_SHADOW}`}
-          style={
-            {
-              opacity: statsIn ? 1 : 0,
-              translate: statsIn ? "0 0" : "0 -28px",
-              filter: statsIn ? "blur(0px)" : "blur(10px)",
-              transition:
-                "opacity 520ms cubic-bezier(0.22, 1, 0.36, 1), translate 520ms cubic-bezier(0.22, 1, 0.36, 1), filter 520ms cubic-bezier(0.22, 1, 0.36, 1)",
-              pointerEvents: statsIn ? "auto" : "none",
-            } as CSSProperties
-          }
+          className={`absolute inset-x-0 top-0 overflow-hidden rounded-[20px] ${GLASS_SHADOW} transition-[height,opacity,transform,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            cardVisible
+              ? "translate-y-0 opacity-100 blur-0"
+              : "-translate-y-3 opacity-0 blur-[8px]"
+          }`}
+          style={{ height: checklistHeight }}
         >
           <span
             aria-hidden
             className="absolute inset-0 rounded-[inherit] bg-white/85 backdrop-blur-[11.4px]"
           />
-          <div className="relative grid grid-cols-2 items-stretch">
-            <div className="flex flex-col gap-3 pr-5">
-              <p className="text-[14px] font-normal leading-[18px] tracking-[-0.7px] text-[rgba(37,32,29,0.6)]">
-                Homes sold to Opendoor in Gotham
-              </p>
-              <p className="text-[28px] font-medium tracking-[-1.4px] text-[#25201d]">
-                {HOMES_SOLD}
-              </p>
-            </div>
 
-            <div className="relative flex flex-col gap-3 pl-5">
-              <div
+          {CHECKLIST_ITEMS.slice(1).map((_, connectorIndex) => {
+            const rowStatus = rowStatuses[connectorIndex + 1];
+            const isDrawn =
+              rowStatus === "connected" || rowStatus === "done";
+
+            return (
+              <span
+                key={`connector-${connectorIndex}`}
                 aria-hidden
-                className="absolute top-0 bottom-0 left-0 w-px bg-[rgba(88,64,50,0.16)]"
+                className={`absolute left-[29px] w-px origin-top bg-[#0041e7] transition-transform duration-400 ease-out ${
+                  isDrawn ? "scale-y-100" : "scale-y-0"
+                }`}
+                style={{
+                  top: 34 + connectorIndex * 32,
+                  height: connectorIndex === 2 ? 19 : 19.5,
+                }}
               />
-              <p className="text-[14px] font-normal leading-[18px] tracking-[-0.7px] text-[rgba(37,32,29,0.6)]">
-                Avg. price of home sold last month
-              </p>
-              <p className="text-[28px] font-medium tracking-[-1.4px] text-[#25201d]">
-                {AVG_PRICE}
-              </p>
-            </div>
-          </div>
+            );
+          })}
+
+          {CHECKLIST_ITEMS.map((item, index) => {
+            const status = rowStatuses[index];
+            const isVisible = status !== "hidden";
+
+            return (
+              <div
+                key={item}
+                className={`absolute left-[23px] right-[23px] flex h-[15px] items-center gap-3 transition-[opacity,transform] duration-350 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isVisible
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-3 opacity-0"
+                }`}
+                style={{ top: 20 + index * 32 }}
+              >
+                <StatusIndicator status={status} />
+                <p className="min-w-0 whitespace-nowrap text-[clamp(10px,2.45vw,14px)] leading-normal font-normal tracking-[-0.05em] text-[#25201d]">
+                  {item}
+                </p>
+              </div>
+            );
+          })}
+
           <span aria-hidden className={GLASS_INSET} />
         </div>
       </div>
@@ -186,23 +293,48 @@ function SceneOverlay({ replayKey }: { replayKey: number }) {
 export function SceneTellUs({ active }: { active: boolean }) {
   return (
     <SceneFrame active={active}>
-      <div className="absolute left-[calc(50%+30.5px)] top-[calc(50%-57.5px)] h-[735px] w-[990px] -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute inset-0">
         <Image
-          src="/images/how-it-works/neighborhood.png"
+          src="/images/how-it-works/step-one-house.jpg"
           alt=""
           fill
-          sizes="990px"
-          className="pointer-events-none object-cover"
+          sizes="571px"
+          className="pointer-events-none object-cover object-center"
         />
       </div>
-      <SceneOverlay replayKey={active ? 1 : 0} />
+      <SceneOverlay active={active} />
     </SceneFrame>
   );
 }
 
 export function SceneAssessment({ active }: { active: boolean }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!active) {
+      video.pause();
+      return;
+    }
+
+    video.currentTime = 0;
+    void video.play().catch(() => {});
+  }, [active]);
+
   return (
     <SceneFrame active={active}>
+      <video
+        ref={videoRef}
+        src="/images/how-it-works/step-two-home-capture.mp4"
+        aria-hidden
+        muted
+        playsInline
+        preload="auto"
+        className="absolute inset-0 z-20 size-full object-cover"
+      />
+
       <div className="absolute left-1/2 top-1/2 h-[660px] w-[620px] -translate-x-1/2 -translate-y-1/2 blur-[1.5px]">
         <Image
           src="/images/how-it-works/living-room.png"
@@ -272,192 +404,185 @@ export function SceneAssessment({ active }: { active: boolean }) {
   );
 }
 
-function Bone({ className }: { className: string }) {
-  return (
-    <div className={`rounded-[3.585px] bg-[rgba(88,64,50,0.13)] ${className}`} />
-  );
-}
-
 export function SceneOffer({ active }: { active: boolean }) {
+  const [stage, setStage] = useState(0);
+
+  useEffect(() => {
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const timers: number[] = [];
+    const later = (delay: number, nextStage: number) => {
+      timers.push(window.setTimeout(() => setStage(nextStage), delay));
+    };
+
+    if (!active) {
+      later(0, 0);
+      return () => timers.forEach(window.clearTimeout);
+    }
+
+    if (reduced) {
+      later(0, 2);
+      return () => timers.forEach(window.clearTimeout);
+    }
+
+    later(0, 0);
+    later(100, 1);
+    later(430, 2);
+
+    return () => timers.forEach(window.clearTimeout);
+  }, [active]);
+
+  const closedFlapCollapsed = stage >= 1;
+  const openFlapExpanded = stage >= 1;
+  const pageRaised = stage >= 2;
+
   return (
     <SceneFrame active={active}>
-      <div className="absolute left-1/2 top-[69px] h-[749px] w-[522px] -translate-x-1/2 overflow-clip rounded-[6px] bg-white shadow-[0px_19px_22.2px_-14px_rgba(74,40,20,0.15),0px_0px_0px_1px_rgba(100,57,31,0.32)]">
-        <div className="absolute left-[11px] top-[11px] h-[129px] w-[500px] rounded-[3px] bg-[rgba(237,232,232,0.47)]">
-          <p className="absolute left-[21px] top-[25px] text-[21.2px] font-medium tracking-[-0.636px] text-[#23201d]">
-            Your estimated listing price
-          </p>
-          <p className="absolute left-[21px] top-[66px] text-[38.362px] font-medium tracking-[-1.1509px] text-[#23201d]">
-            $ XXX, XXX
-          </p>
-        </div>
+      <div className="absolute inset-0 overflow-hidden bg-[#ede8e8] [perspective:1000px]">
+        {/* Envelope back */}
+        <div className="absolute left-[3.1%] top-[73.68%] h-[65.98%] w-[93.6%] bg-gradient-to-b from-[#f6f2f2] to-[#fbf9f9] shadow-[0_0_0_1.275px_rgba(88,64,50,0.11)]" />
 
-        <div className="absolute left-[32px] top-[164px] h-[101px] w-[191px] overflow-hidden rounded-[6.273px]">
-          <Image
-            src="/images/how-it-works/offer-house.png"
+        {/* Closed flap compresses upward while its top edge stays on the hinge. */}
+        <div
+          className="absolute left-[3.1%] top-[73.68%] z-40 h-[22.93%] w-[93.6%] origin-top transition-transform duration-[140ms] ease-[cubic-bezier(0.55,0,1,0.45)] will-change-transform"
+          style={{
+            transform: closedFlapCollapsed ? "scaleY(0)" : "scaleY(1)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/how-it-works/offer-envelope-flap-closed.svg"
             alt=""
-            fill
-            sizes="191px"
-            className="object-cover"
+            className="absolute left-0 top-[-1.64%] size-full max-w-none"
           />
         </div>
-        <div className="absolute left-[243px] top-[179px] flex w-[187px] flex-col gap-[4px]">
-          <p className="text-[17.951px] font-medium leading-[1.2] tracking-[-0.4308px] text-[#23201d]">
-            1234 Main St,
-            <br />
-            Marietta, GA 30062
-          </p>
-          <p className="text-[15.957px] font-normal leading-[1.5] tracking-[-0.2234px] text-[#5d554d]">
-            4 bed · 3 bath · 2,630 sqft
-          </p>
+
+        {/* Open flap continues from that hinge and expands upward. */}
+        <div
+          className="absolute left-[3.1%] top-[50.75%] z-10 h-[22.93%] w-[93.6%] origin-bottom transition-transform delay-[110ms] duration-[190ms] ease-[cubic-bezier(0,0.7,0.2,1)] will-change-transform"
+          style={{
+            transform: openFlapExpanded ? "scaleY(1)" : "scaleY(0)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/how-it-works/offer-envelope-flap-open.svg"
+            alt=""
+            className="block size-full max-w-none"
+          />
         </div>
 
-        <p className="absolute left-[32px] top-[313px] text-[21.2px] font-medium tracking-[-0.636px] text-[#23201d]">
-          Your offers
-        </p>
-
-        <div className="absolute left-[32px] top-[348px] flex w-[458px] gap-[10px]">
-          <div className="h-[103px] flex-1 rounded-[3.585px] bg-[rgba(88,64,50,0.06)]" />
-          <div className="h-[103px] flex-1 rounded-[3.585px] bg-[rgba(88,64,50,0.06)]" />
+        {/* Offer page starts inside the envelope, then rises after the flap opens. */}
+        <div
+          className="absolute left-[6.2%] top-[6.02%] z-20 aspect-[452/500] w-[87.6%] overflow-hidden rounded-[9.539px] shadow-[0_0_0_1.275px_rgba(88,64,50,0.17)] transition-[transform,filter] duration-[900ms] ease-[cubic-bezier(0.16,1.08,0.3,1)]"
+          style={{
+            transform: pageRaised ? "translateY(0)" : "translateY(78%)",
+            filter: pageRaised ? "drop-shadow(0 10px 18px rgba(88,64,50,0.08))" : "none",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/how-it-works/offer-page.png"
+            alt=""
+            width={1819}
+            height={2011}
+            className="absolute left-[-0.304%] top-[-0.275%] h-[100.55%] w-[100.608%] max-w-none"
+          />
         </div>
 
-        <Bone className="absolute left-[32px] top-[461px] h-[12px] w-[224px]" />
-        <Bone className="absolute left-[32px] top-[483px] h-[12px] w-[121px]" />
-        <Bone className="absolute left-[266px] top-[461px] h-[12px] w-[224px]" />
-        <Bone className="absolute left-[266px] top-[483px] h-[12px] w-[121px]" />
-
-        <div className="absolute left-[32px] top-[515px] flex items-center gap-1">
-          <Bone className="size-[12px]" />
-          <Bone className="h-[12px] w-[192px]" />
-        </div>
-        <div className="absolute left-[32px] top-[535px] flex items-center gap-1">
-          <Bone className="size-[12px]" />
-          <Bone className="h-[12px] w-[192px]" />
-        </div>
-        <div className="absolute left-[266px] top-[515px] flex items-center gap-1">
-          <Bone className="size-[12px]" />
-          <Bone className="h-[12px] w-[192px]" />
-        </div>
-        <div className="absolute left-[266px] top-[535px] flex items-center gap-1">
-          <Bone className="size-[12px]" />
-          <Bone className="h-[12px] w-[192px]" />
-        </div>
+        {/* Front pocket, including its top highlight, inset shadow, and center seam. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/how-it-works/offer-envelope-front.svg"
+          alt=""
+          className="absolute left-[-4.34%] top-[64.59%] z-30 h-[145.38%] w-[108.49%] max-w-none"
+        />
       </div>
     </SceneFrame>
   );
 }
 
 export function SceneAccept({ active }: { active: boolean }) {
+  const [entered, setEntered] = useState(false);
+
+  useEffect(() => {
+    const timers: number[] = [];
+    const later = (delay: number, value: boolean) => {
+      timers.push(window.setTimeout(() => setEntered(value), delay));
+    };
+
+    if (!active) {
+      later(0, false);
+      return () => timers.forEach(window.clearTimeout);
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      later(0, true);
+      return () => timers.forEach(window.clearTimeout);
+    }
+
+    later(0, false);
+    later(160, true);
+    return () => timers.forEach(window.clearTimeout);
+  }, [active]);
+
   return (
     <SceneFrame active={active}>
-      <div className="absolute left-1/2 top-[calc(50%-57.5px)] h-[735px] w-[990px] -translate-x-1/2 -translate-y-1/2">
+      <div className="absolute inset-0">
         <Image
-          src="/images/how-it-works/neighborhood.png"
+          src="/images/how-it-works/step-one-house.jpg"
           alt=""
           fill
-          sizes="990px"
-          className="pointer-events-none object-cover"
+          sizes="571px"
+          className="pointer-events-none object-cover object-center"
         />
       </div>
 
-      <div className="absolute left-[106px] top-[240px] flex h-[410.741px] w-[358.696px] items-center justify-center">
-        <div className="-rotate-[14.42deg]">
-          <div className="relative h-[352.144px] w-[279.795px] overflow-clip rounded-[5.906px] shadow-[0px_0px_0px_0.738px_rgba(88,64,50,0.11)]">
-            <div
-              aria-hidden
-              className="absolute inset-0 rounded-[5.906px] bg-gradient-to-b from-[#f7f3f3] to-[#fbf9f9]"
-            />
+      {/* Figma's 516 × 532 composition, centered without distorting the assets. */}
+      <div className="absolute left-0 top-1/2 aspect-[516/532] w-full -translate-y-1/2">
+        <div
+          className="absolute left-[-19.62%] top-[54.43%] z-10 w-[83.96%] will-change-transform"
+          style={{
+            opacity: entered ? 1 : 0,
+            transform: entered
+              ? "translate3d(0, 0, 0) rotate(0deg) scale(1)"
+              : "translate3d(-28%, 62%, 0) rotate(38deg) scale(0.86)",
+            transformOrigin: "top left",
+            transition:
+              "transform 1100ms cubic-bezier(0.18, 1.28, 0.3, 1), opacity 180ms ease-out",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/how-it-works/step-four-calendar.svg"
+            alt=""
+            width={434}
+            height={339}
+            className="block h-auto w-full max-w-none"
+          />
+        </div>
 
-            <div className="absolute left-[134.36px] top-1/2 h-[425.23px] w-[4.429px] -translate-y-1/2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/how-it-works/envelope-fold.png"
-                alt=""
-                width={4}
-                height={425}
-                className="absolute inset-0 size-full max-w-none object-cover"
-              />
-            </div>
-
-            <div className="absolute left-[calc(50%-0.37px)] top-1/2 h-[382.412px] w-0 -translate-x-1/2 -translate-y-1/2">
-              <div className="absolute inset-[0_-0.37px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/how-it-works/envelope-crease-a.svg"
-                  alt=""
-                  className="block size-full max-w-none"
-                />
-              </div>
-            </div>
-            <div className="absolute left-[calc(50%+0.37px)] top-1/2 h-[382.412px] w-0 -translate-x-1/2 -translate-y-1/2">
-              <div className="absolute inset-[0_-0.37px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/how-it-works/envelope-crease-b.svg"
-                  alt=""
-                  className="block size-full max-w-none"
-                />
-              </div>
-            </div>
-
-            <div className="absolute left-0 top-0 h-[52.416px] w-[279.795px]">
-              <div className="absolute inset-[0_-1.13%_-13.1%_-1.13%]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/how-it-works/envelope-flap-top.svg"
-                  alt=""
-                  className="block size-full max-w-none"
-                />
-              </div>
-            </div>
-
-            <div className="absolute left-0 top-[343.28px] flex h-[8.859px] w-[279.795px] items-center justify-center">
-              <div className="-scale-y-100">
-                <div className="relative h-[8.859px] w-[279.795px]">
-                  <div className="absolute inset-[-25%_-0.26%_0_-0.26%]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/how-it-works/envelope-flap-bottom.svg"
-                      alt=""
-                      className="block size-full max-w-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <p className="absolute left-[155.03px] top-[283.49px] whitespace-nowrap text-[5.679px] leading-[7.382px] tracking-[-0.2839px] text-[rgba(88,64,50,0.6)]">
-              Final offer
-            </p>
-            <p className="absolute left-[155.03px] top-[292.98px] whitespace-nowrap text-[5.679px] leading-[7.382px] tracking-[-0.2839px] text-[rgba(88,64,50,0.6)]">
-              from: Opendoor Operations Inc.
-            </p>
-            <p className="absolute left-[169.27px] top-[302.47px] whitespace-nowrap text-[5.679px] leading-[7.382px] tracking-[-0.2839px] text-[rgba(88,64,50,0.6)]">
-              Miami, FL 968324
-            </p>
-            <p className="absolute left-[161.89px] top-[311.96px] whitespace-nowrap text-[5.679px] leading-[7.382px] tracking-[-0.2839px] text-[rgba(88,64,50,0.6)]">
-              to: Jennifer Chen
-            </p>
-            <p className="absolute left-[169.27px] top-[321.45px] whitespace-nowrap text-[5.679px] leading-[7.382px] tracking-[-0.2839px] text-[rgba(88,64,50,0.6)]">
-              Tampa, FL 897653
-            </p>
-
-            <div className="absolute left-[43.56px] top-[33.22px] flex h-[44.738px] w-[59.146px] items-center justify-center mix-blend-multiply">
-              <div className="rotate-[13.91deg]">
-                <div className="relative h-[33.025px] w-[52.755px]">
-                  <div className="absolute inset-[-1.67%_-1.04%]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/how-it-works/envelope-stamp.svg"
-                      alt=""
-                      className="block size-full max-w-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_2.215px_0px_0px_white]" />
-          </div>
+        <div
+          className="absolute left-[53.8%] top-[68.91%] z-20 w-[63.03%] will-change-transform"
+          style={{
+            opacity: entered ? 1 : 0,
+            transform: entered
+              ? "translate3d(0, 0, 0) rotate(0deg) scale(1)"
+              : "translate3d(34%, 72%, 0) rotate(-38deg) scale(0.86)",
+            transformOrigin: "top right",
+            transition:
+              "transform 1000ms cubic-bezier(0.18, 1.28, 0.3, 1) 80ms, opacity 180ms ease-out 80ms",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/how-it-works/step-four-envelope.svg"
+            alt=""
+            width={326}
+            height={206}
+            className="block h-auto w-full max-w-none"
+          />
         </div>
       </div>
     </SceneFrame>

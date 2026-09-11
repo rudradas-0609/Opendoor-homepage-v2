@@ -4,7 +4,6 @@ import { CashNowMoreLater } from "@/components/CashNowMoreLater";
 import { FAQ } from "@/components/FAQ";
 import { FinalCTASwitcher } from "@/components/FinalCTASwitcher";
 import { HeroSwitcher } from "@/components/HeroSwitcher";
-import { HowItWorks } from "@/components/HowItWorks";
 import { MomentsSection } from "@/components/MomentsSection";
 import { Testimonials } from "@/components/Testimonials";
 
@@ -14,7 +13,6 @@ export default function Home() {
       <main>
         <HeroSwitcher />
         <Testimonials />
-        <HowItWorks />
         <CashNowMoreLater />
         <MomentsSection>
           <BuyHomes />

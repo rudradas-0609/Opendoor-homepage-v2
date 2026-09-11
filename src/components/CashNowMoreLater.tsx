@@ -54,7 +54,6 @@ export function CashNowMoreLater() {
           </button>
         </div>
 
-        {/* Figma: button bottom 307 → labels 338 */}
         <div className="relative mt-[31px]">
           <Timeline />
         </div>
